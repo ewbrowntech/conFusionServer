@@ -11,7 +11,6 @@ var promoRouter = require('./routes/promoRouter');
 var leaderRouter = require('./routes/leaderRouter');
 
 const mongoose = require('mongoose');
-const Dishes = require('./models/dishes');
 const url = 'mongodb://127.0.0.1:27017/conFusion';
 const connect = mongoose.connect(url);
 connect.then((db) => {
@@ -28,6 +27,32 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+function auth(request, response, next) {
+  console.log(request.headers);
+  let authHeader = request.headers.authorization;
+  if (!authHeader) {
+    console.log("No auth header")
+    let err = new Error('You are not authenticated!');
+    response.setHeader('WWW-Authenticate', 'Basic');
+    err.status = 401;
+    return next(err);
+  }
+  let auth = new Buffer(authHeader.split(' ')[1], 'base64').toString().split(':');
+  let username = auth[0];
+  let password = auth[1];
+
+  if (username === 'admin' && password === 'password') {
+    next();
+  } else {
+    let err = new Error('You are not authenticated!');
+    response.setHeader('WWW-Authenticate', 'Basic');
+    err.status = 401;
+    return next(err);
+  }
+}
+
+app.use(auth);
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
@@ -50,7 +75,8 @@ app.use(function(err, req, res, next) {
 
   // render the error page
   res.status(err.status || 500);
-  res.render('error');
+  res.render('error', {title:'your_page_title'});
+  console.log(res)
 });
 
 module.exports = app;
