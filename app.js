@@ -28,6 +28,7 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
 // app.use(cookieParser('12345-67890-09876-54321'));
 app.use(session({
   name: 'session-id',
@@ -37,37 +38,20 @@ app.use(session({
   store: new FileStore()
 }));
 
+app.use('/', indexRouter);
+app.use('/users', usersRouter);
 function auth(request, response, next) {
-  console.log(request.session);
-
   if (!request.session.user) {
-    let authHeader = request.headers.authorization;
-    if (!authHeader) {
-      console.log("No auth header")
-      let err = new Error('You are not authenticated!');
-      response.setHeader('WWW-Authenticate', 'Basic');
-      err.status = 401;
-      return next(err);
-    }
-    let auth = new Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
-    let username = auth[0];
-    let password = auth[1];
-
-    if (username === 'admin' && password === 'password') {
-      request.session.user = 'admin';
-      next();
-    } else {
-      let err = new Error('You are not authenticated!');
-      response.setHeader('WWW-Authenticate', 'Basic');
-      err.status = 401;
-      return next(err);
-    }
+    let err = new Error('You are not authenticated!');
+    response.setHeader('WWW-Authenticate', 'Basic');
+    err.status = 403;
+    return next(err);
   } else {
-    if (request.session.user === 'admin') {
+    if (request.session.user === 'authenticated') {
       next();
     } else {
       let err = new Error('You are not authenticated!');
-      err.status = 401;
+      err.status = 403;
       return next(err);
     }
   }
@@ -76,8 +60,6 @@ function auth(request, response, next) {
 app.use(auth);
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
 app.use('/dishes', dishRouter);
 app.use('/promotions', promoRouter);
 app.use('/leaders', leaderRouter);
