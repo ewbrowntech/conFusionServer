@@ -3,6 +3,8 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var session = require('express-session');
+var FileStore = require('session-file-store')(session);
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -26,13 +28,19 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser('12345-67890-09876-54321'));
+// app.use(cookieParser('12345-67890-09876-54321'));
+app.use(session({
+  name: 'session-id',
+  secret: '12345-67890-09876-54321',
+  saveUninitialized: false,
+  resave: false,
+  store: new FileStore()
+}));
 
 function auth(request, response, next) {
-  console.log(request.signedCookies);
-  console.log(request.headers);
+  console.log(request.session);
 
-  if (!request.signedCookies.user) {
+  if (!request.session.user) {
     let authHeader = request.headers.authorization;
     if (!authHeader) {
       console.log("No auth header")
@@ -46,7 +54,7 @@ function auth(request, response, next) {
     let password = auth[1];
 
     if (username === 'admin' && password === 'password') {
-      response.cookie('user', 'admin', { signed: true })
+      request.session.user = 'admin';
       next();
     } else {
       let err = new Error('You are not authenticated!');
@@ -55,7 +63,7 @@ function auth(request, response, next) {
       return next(err);
     }
   } else {
-    if (request.signedCookies.user === 'admin') {
+    if (request.session.user === 'admin') {
       next();
     } else {
       let err = new Error('You are not authenticated!');
@@ -89,7 +97,6 @@ app.use(function(err, req, res, next) {
   // render the error page
   res.status(err.status || 500);
   res.render('error', {title:'your_page_title'});
-  console.log(res)
 });
 
 module.exports = app;
