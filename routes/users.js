@@ -19,10 +19,20 @@ router.post('/signup', function(request, response, next) {
       response.setHeader('Content-Type', 'application/json');
       response.json({err: err});
     } else {
-      passport.authenticate('local')(request, response, () => {
-        response.statusCode = 200;
-        response.setHeader('Content-Type', 'application/json');
-        response.json({success: true, status: 'Registration successful!'});
+      if (request.body.firstname) { user.firstname = request.body.firstname }
+      if (request.body.lastname) { user.lastname = request.body.lastname }
+      user.save((err, user) => {
+        passport.authenticate('local')(request, response, () => {
+          if (err) {
+            response.statusCode = 500;
+            response.setHeader('Content-Type', 'application/json');
+            response.json({err: err});
+            return
+          }
+          response.statusCode = 200;
+          response.setHeader('Content-Type', 'application/json');
+          response.json({success: true, status: 'Registration successful!'});
+        });
       });
     }
   })
@@ -36,17 +46,7 @@ router.post('/login', passport.authenticate('local'), (request, response) => {
 });
 
 // router.get('/logout', (request, response, next) => {
-//   if (request.session) {
-//     console.log(request.session);
-//     request.session.destroy();
-//     response.clearCookie('session-id');
-//     response.setHeader('Content-Type', 'text/plain');
-//     response.end('See you later!');
-//   } else {
-//     let err = new Error('You are not logged in!');
-//     err.status = 403;
-//     next(err);
-//   }
+//
 // });
 
 module.exports = router;
