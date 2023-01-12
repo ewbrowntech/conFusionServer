@@ -2,6 +2,8 @@ let express = require('express');
 const bodyParser = require('body-parser');
 let User = require('../models/user');
 var passport = require('passport');
+let authenticate = require('../authenticate');
+
 let router = express.Router();
 router.use(bodyParser.json())
 
@@ -27,23 +29,24 @@ router.post('/signup', function(request, response, next) {
 });
 
 router.post('/login', passport.authenticate('local'), (request, response) => {
+  let token = authenticate.getToken({_id: request.user._id});
   response.statusCode = 200;
   response.setHeader('Content-Type', 'application/json');
-  response.json({success: true, status: 'Login successful!'});
+  response.json({success: true, token: token, status: 'Login successful!'});
 });
 
-router.get('/logout', (request, response, next) => {
-  if (request.session) {
-    console.log(request.session);
-    request.session.destroy();
-    response.clearCookie('session-id');
-    response.setHeader('Content-Type', 'text/plain');
-    response.end('See you later!');
-  } else {
-    let err = new Error('You are not logged in!');
-    err.status = 403;
-    next(err);
-  }
-});
+// router.get('/logout', (request, response, next) => {
+//   if (request.session) {
+//     console.log(request.session);
+//     request.session.destroy();
+//     response.clearCookie('session-id');
+//     response.setHeader('Content-Type', 'text/plain');
+//     response.end('See you later!');
+//   } else {
+//     let err = new Error('You are not logged in!');
+//     err.status = 403;
+//     next(err);
+//   }
+// });
 
 module.exports = router;
