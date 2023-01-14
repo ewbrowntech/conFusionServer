@@ -2,7 +2,6 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const Dishes = require('../models/dishes');
 const authenticate = require('../authenticate');
-const {verifyAdmin} = require("../authenticate");
 
 const dishRouter = express.Router();
 dishRouter.use(bodyParser.json());
@@ -164,6 +163,11 @@ dishRouter.route('/:dishId/comments/:commentId')
         Dishes.findById(request.params.dishId)
             .populate('comments.author')
             .then((dish) => {
+            if (!(request.user._id.equals(dish.comments.id(request.params.commentId).author._id))) {
+                let err = new Error('You are not authorized to perform this operation!');
+                err.status = 403;
+                return next(err);
+            }
             if (request.body.rating) {
                 dish.comments.id(request.params.commentId).rating = request.body.rating;
             }
@@ -183,6 +187,11 @@ dishRouter.route('/:dishId/comments/:commentId')
     })
     .delete(authenticate.verifyUser, (request, response, next) => {
         Dishes.findById(request.params.dishId).then((dish) => {
+            if (!(request.user._id.equals(dish.comments.id(request.params.commentId).author._id))) {
+                let err = new Error('You are not authorized to perform this operation!');
+                err.status = 403;
+                return next(err);
+            }
             dish.comments.id(request.params.commentId).remove();
             dish.save().then((dish) => {
                 Dishes.findById(dish._id)
