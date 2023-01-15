@@ -1,10 +1,8 @@
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
-var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var passport = require('passport');
-var authenticate = require('./authenticate');
 let config = require('./config');
 
 var indexRouter = require('./routes/index');
@@ -21,6 +19,14 @@ connect.then((db) => {
 }, (err) => { console.log(err)});
 
 var app = express();
+
+app.all('*', (request, response, next) => {
+  if (request.secure) {
+    return next();
+  } else {
+    response.redirect(307, 'https://' + request.hostname + ':' + app.get('secPort') + request.url);
+  }
+});
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
