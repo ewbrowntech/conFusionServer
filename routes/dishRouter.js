@@ -94,7 +94,7 @@ dishRouter.route('/:dishId/comments')
         Dishes.findById(request.params.dishId).then((dish) => {
             if (dish != null) {
                 request.body.author = request.user._id;
-                dish.comments.push(request.body)
+                dish.comments.push(request.body);
                 dish.save().then(dish => {
                     Dishes.findById(dish._id).populate('comments.author').then((dish) => {
                         response.statusCode = 200;
